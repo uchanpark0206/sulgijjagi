@@ -8,15 +8,143 @@
 </head>
 
 <body>
-    <header>
-        <h1>자기소개 </h1>
-    </header>
-    <main>
-        <h2>이름 : 박유찬</h2>
-        <h2>학년 : </h2>
-        <h2>학과 : 전산전자</h2>
-    </main>
-    <footer>
+    <!DOCTYPE html>
+    <html lang="ko">
 
-    </footer>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>자기소개 페이지</title>
+        <style>
+            /* 기본 스타일 초기화 및 배경 설정 */
+            body {
+                font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+                background-color: #f4f7f6;
+                color: #333;
+                margin: 0;
+                padding: 40px 20px;
+                display: flex;
+                justify-content: center;
+            }
+
+            /* 메인 컨테이너 (div 사용) */
+            .profile-container {
+                background-color: #ffffff;
+                width: 100%;
+                max-width: 600px;
+                padding: 40px;
+                border-radius: 15px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+
+            /* 프로필 이미지 (img 사용) */
+            .profile-img {
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                object-fit: cover;
+                margin-bottom: 20px;
+                border: 3px solid #e0e0e0;
+            }
+
+            /* 제목 스타일 (h1, h2, h3 사용) */
+            h1 {
+                margin: 0 0 10px 0;
+                color: #2c3e50;
+            }
+
+            h2 {
+                font-size: 20px;
+                color: #34495e;
+                border-bottom: 2px solid #3498db;
+                display: inline-block;
+                padding-bottom: 5px;
+                margin-top: 30px;
+                margin-bottom: 15px;
+            }
+
+            h3 {
+                font-size: 16px;
+                color: #7f8c8d;
+                margin: 0 0 20px 0;
+                font-weight: normal;
+            }
+
+            /* 본문 (p 사용) */
+            p {
+                line-height: 1.6;
+                color: #555;
+                text-align: left;
+                word-break: keep-all;
+            }
+
+            /* 리스트 스타일 (ul, li 사용) */
+            ul {
+                list-style-type: none;
+                padding: 0;
+                margin: 0;
+                text-align: left;
+            }
+
+            li {
+                background-color: #ecf0f1;
+                margin-bottom: 10px;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-size: 15px;
+            }
+
+            /* 링크 스타일 (a 사용) */
+            a {
+                color: #3498db;
+                text-decoration: none;
+                font-weight: bold;
+            }
+
+            a:hover {
+                text-decoration: underline;
+                color: #2980b9;
+            }
+        </style>
+    </head>
+
+    <body>
+
+        <div class="profile-container">
+
+            <img src="https://via.placeholder.com/150" alt="프로필 사진" class="profile-img">
+
+            <h1>박유찬</h1>
+
+            <h3>프론트엔드 개발자를 꿈꾸는 학생</h3>
+
+            <h2>자신에 대한 소개</h2>
+            <p>안녕하세요! 입번에 새로 슬기짜기에 가입한 23학번 박유찬이라고 합니다. 취미는 애니메이션 보기입니다 .잘 부탁드립니다
+            <h2>기본정보</h2>
+            <ul>
+                <li>이름:22300304</li>
+                <li>학년:2학년(3학기)</li>
+                <li>전공:전산전자</li>
+            </ul>
+
+            <h2>My Skills</h2>
+            <ul>
+                <li>일본어 자격증 있음</li>
+            </ul>
+
+            <h2>Contact & Links</h2>
+            <ul>
+                <li>Email : <a href="mailto:uchanpark0206@gmail.com">uchanpark0206@gmail.com</a></li>
+                <li>GitHub : <a href="https://github.com" target="_blank">github.com/honggildong</a></li>
+                <li>instagram: ha_i__yu1217</li>
+            </ul>
+
+        </div>
+
+    </body>
+
+    </html>
 </body>
+
+</html>
