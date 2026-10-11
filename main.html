@@ -4,24 +4,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>팀플 시간 조율기 (MVP)</title>
+    <title>팀플 빈 시간 찾기 (여집합 방식)</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
             max-width: 600px;
             margin: auto;
-            background-color: #f9f9f9;
+            background-color: #f4f7f6;
         }
 
         .container {
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
 
+        .date-group,
         .input-group {
+            background: #fdfdfd;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -31,132 +36,198 @@
         input,
         button {
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 15px;
         }
 
         button {
-            background-color: #4CAF50;
+            background-color: #3b82f6;
             color: white;
             border: none;
             cursor: pointer;
             font-weight: bold;
+            margin-top: 5px;
         }
 
         button:hover {
-            background-color: #45a049;
+            background-color: #2563eb;
         }
 
         .result-box {
             margin-top: 20px;
             padding: 15px;
-            background: #eef2ff;
+            background: #eff6ff;
             border-radius: 8px;
-            border-left: 4px solid #4f46e5;
+            border-left: 4px solid #2563eb;
         }
 
         ul {
             padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-bottom: 5px;
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h2>팀플 교집합 시간 찾기 ⏰</h2>
-        <p>팀원들의 가능한 시간을 입력하면, 모두가 모일 수 있는 겹치는 시간을 자동으로 계산합니다.</p>
+        <h2>팀플 빈 시간 찾기 🔍</h2>
+        <p>팀원들의 <b>'기존 일정(수업, 알바 등)'</b>을 입력하면, 일정이 없는 남는 시간을 계산해 줍니다.</p>
 
-        <div class="input-group">
-            <input type="text" id="memberName" placeholder="이름 (예: 홍길동)" required>
-            <label>가능한 시작 시간:</label>
-            <input type="datetime-local" id="startTime" required>
-            <label>가능한 종료 시간:</label>
-            <input type="datetime-local" id="endTime" required>
-            <button onclick="addTime()">시간 추가하기</button>
+        <!-- 회의 기준일 설정 -->
+        <div class="date-group">
+            <label>📅 <b>회의를 할 날짜를 먼저 선택하세요</b></label>
+            <input type="date" id="targetDate" required>
+            <small>* 기본 회의 가능 시간은 해당일 오전 9시 ~ 오후 10시로 설정됩니다.</small>
         </div>
 
-        <h3>입력된 시간 현황</h3>
-        <ul id="timeList"></ul>
+        <!-- 일정 입력 -->
+        <div class="input-group">
+            <label>❌ <b>팀원들의 불가능한 일정 입력</b></label>
+            <input type="text" id="memberName" placeholder="이름 (예: 홍길동)" required>
+            <input type="text" id="eventName" placeholder="일정 이름 (예: 전공 수업, 알바)" required>
+            <label>일정 시작 시간:</label>
+            <input type="time" id="startTime" required>
+            <label>일정 종료 시간:</label>
+            <input type="time" id="endTime" required>
+            <button onclick="addSchedule()">일정 추가하기</button>
+        </div>
+
+        <h3>등록된 일정 현황</h3>
+        <ul id="scheduleList"></ul>
 
         <div class="result-box">
-            <h3>💡 추천 회의 시간</h3>
-            <p id="resultText">아직 입력된 시간이 없습니다.</p>
+            <h3>💡 모두가 비어있는 시간 (회의 가능 시간)</h3>
+            <ul id="resultList">아직 계산된 결과가 없습니다.</ul>
         </div>
     </div>
 
     <script>
-        // 팀원들의 입력 데이터를 저장할 배열
-        let schedules = [];
+        // 오늘 날짜를 기본값으로 세팅
+        document.getElementById('targetDate').valueAsDate = new Date();
 
-        // 1. 입력받은 데이터를 배열에 추가하고 화면을 업데이트하는 함수
-        function addTime() {
+        let busySchedules = [];
+
+        // 1. 일정 추가 함수
+        function addSchedule() {
+            const targetDate = document.getElementById('targetDate').value;
             const name = document.getElementById('memberName').value;
+            const eventName = document.getElementById('eventName').value;
             const start = document.getElementById('startTime').value;
             const end = document.getElementById('endTime').value;
 
-            if (!name || !start || !end) {
+            if (!targetDate || !name || !eventName || !start || !end) {
                 alert("모든 항목을 입력해주세요!");
                 return;
             }
 
-            if (new Date(start) >= new Date(end)) {
+            if (start >= end) {
                 alert("종료 시간은 시작 시간보다 늦어야 합니다.");
                 return;
             }
 
-            schedules.push({
+            // 날짜와 시간을 합쳐서 Date 객체로 변환
+            const startDateTime = new Date(`${targetDate}T${start}`);
+            const endDateTime = new Date(`${targetDate}T${end}`);
+
+            busySchedules.push({
                 name: name,
-                start: new Date(start),
-                end: new Date(end)
+                event: eventName,
+                start: startDateTime,
+                end: endDateTime
             });
 
-            // 입력창 초기화
+            // 입력창 초기화 (이름과 일정명만)
             document.getElementById('memberName').value = '';
-            document.getElementById('startTime').value = '';
-            document.getElementById('endTime').value = '';
+            document.getElementById('eventName').value = '';
 
             updateDOM();
-            calculateOverlap();
+            calculateFreeTime(targetDate);
         }
 
-        // 2. DOM을 조작하여 입력된 리스트를 화면에 렌더링하는 함수
+        // 2. 화면에 등록된 일정 리스트 보여주기
         function updateDOM() {
-            const list = document.getElementById('timeList');
-            list.innerHTML = ""; // 기존 목록 초기화
+            const list = document.getElementById('scheduleList');
+            list.innerHTML = "";
 
-            schedules.forEach(s => {
+            busySchedules.forEach(s => {
                 const li = document.createElement('li');
-                li.textContent = `${s.name} : ${formatDate(s.start)} ~ ${formatDate(s.end)}`;
+                li.innerHTML = `<span class="tag">${s.name}</span> <b>${s.event}</b> : ${formatTime(s.start)} ~ ${formatTime(s.end)}`;
                 list.appendChild(li);
             });
         }
 
-        // 3. 교집합(모두가 겹치는 시간)을 계산하는 핵심 알고리즘
-        function calculateOverlap() {
-            if (schedules.length === 0) return;
+        // 3. 빈 시간(여집합) 계산 로직
+        function calculateFreeTime(targetDateString) {
+            // 기준 시간: 해당 날짜의 09:00 ~ 22:00
+            const boundaryStart = new Date(`${targetDateString}T09:00:00`);
+            const boundaryEnd = new Date(`${targetDateString}T22:00:00`);
 
-            // 핵심 로직: 모든 시작 시간 중 '가장 늦은 시간'과 모든 종료 시간 중 '가장 이른 시간'을 찾음
-            const maxStart = new Date(Math.max(...schedules.map(s => s.start)));
-            const minEnd = new Date(Math.min(...schedules.map(s => s.end)));
+            if (busySchedules.length === 0) return;
 
-            const resultText = document.getElementById('resultText');
+            // [핵심 1] 입력된 모든 일정을 시작 시간 순서대로 정렬
+            let sortedSchedules = [...busySchedules].sort((a, b) => a.start - b.start);
+            let mergedSchedules = [];
 
-            // 겹치는 구간이 존재하는 경우 (가장 늦은 시작 시간이 가장 이른 종료 시간보다 앞설 때)
-            if (maxStart < minEnd) {
-                resultText.innerHTML = `<strong>모두가 가능한 시간:</strong><br><br>🟢 ${formatDate(maxStart)} 부터<br>🔴 ${formatDate(minEnd)} 까지`;
-                resultText.style.color = "#15803d"; // 초록색 텍스트
+            // [핵심 2] 겹치는 일정들 하나로 병합 (예: A의 1~3시 수업, B의 2~4시 알바 -> 1~4시 바쁨)
+            let current = { start: sortedSchedules[0].start, end: sortedSchedules[0].end };
+
+            for (let i = 1; i < sortedSchedules.length; i++) {
+                let next = sortedSchedules[i];
+                if (current.end >= next.start) {
+                    // 겹치면 끝나는 시간을 더 늦은 시간으로 갱신
+                    current.end = new Date(Math.max(current.end, next.end));
+                } else {
+                    // 안 겹치면 현재까지 합쳐진 일정을 배열에 넣고 새로 시작
+                    mergedSchedules.push(current);
+                    current = { start: next.start, end: next.end };
+                }
+            }
+            mergedSchedules.push(current);
+
+            // [핵심 3] 기준 시간(09:00 ~ 22:00)에서 병합된 일정들을 빼고 빈 구간 찾기
+            let freeTimes = [];
+            let currentTime = boundaryStart;
+
+            for (let busy of mergedSchedules) {
+                if (currentTime < busy.start) {
+                    freeTimes.push({ start: currentTime, end: busy.start });
+                }
+                currentTime = new Date(Math.max(currentTime, busy.end));
+            }
+
+            // 마지막 일정 끝난 후 ~ 밤 10시까지 남은 시간 추가
+            if (currentTime < boundaryEnd) {
+                freeTimes.push({ start: currentTime, end: boundaryEnd });
+            }
+
+            // [결과 출력]
+            const resultList = document.getElementById('resultList');
+            resultList.innerHTML = "";
+
+            if (freeTimes.length === 0) {
+                resultList.innerHTML = "<li>🥲 안타깝게도 모두가 비는 시간이 없습니다.</li>";
             } else {
-                resultText.innerHTML = "안타깝게도 모두가 겹치는 시간이 없습니다. 일정을 다시 조정해 보세요. 🥲";
-                resultText.style.color = "#b91c1c"; // 빨간색 텍스트
+                freeTimes.forEach(free => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `✅ <b>${formatTime(free.start)} ~ ${formatTime(free.end)}</b>`;
+                    resultList.appendChild(li);
+                });
             }
         }
 
-        // 날짜 포맷팅 헬퍼 함수
-        function formatDate(date) {
-            return date.toLocaleString('ko-KR', {
-                month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-            });
+        // 시간 포맷팅 헬퍼 함수 (예: "14:30")
+        function formatTime(date) {
+            return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
     </script>
 </body>
