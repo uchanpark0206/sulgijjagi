@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <header>
+        <h1>CRUD</h1>
+    </header>
+    <main>
+        <div id="input">
+            <form>
+                <label>제목</label>
+                <input type="text" id="title"><br>
+                <label>저자</label>
+                <input type="text" id="author"><br>
+                <label>카테고리</label>
+                <input type="text" id="category"><br>
+
+                <br>
+                <button type="button" id="add">add</button>
+            </form>
+
+        </div>
+
+        <div id="output">
+            <table>
+                <tr>제목</tr>
+                <tr>저자</tr>
+                <tr>카테고리</tr>
+                <thead id="new_table">
+                </thead>
+            </table>
+
+        </div>
+    </main>
+    <footer>
+
+    </footer>
+
+</body>
+
+<script>
+    let books = [
+        { id: 1, title: "HTML 기초", author: "Kim", category: "Web" },
+        { id: 2, title: "JavaScript 정석", author: "Lee", category: "Web" },
+        { id: 3, title: "인공지능 개론", author: "Park", category: "AI" }
+    ];
+    function render() {
+        new_table.innerHTML = "";
+
+        books.forEach(b => {
+            const tr = document.createElement("tr")//따옴표 필수
+            tr.innerHTML = `
+            <td>${b.id}</td>
+            <td>${b.title}</td>
+            <td>${b.author}</td>
+            <td>${b.category}</td>
+            <td>
+                <button  onclick="eBook(${b.id})">수정</button>
+                <button  onclick="dBook(${b.id})">삭제</button>
+            </td>
+            `
+            new_table.appendChild(tr);//따옴표 있으면 안됨
+
+
+        })
+    }
+    render();
+    editid = null;//3.에 사용
+
+
+    //2.add기능 구현하기
+    const title_input = document.getElementById("title");//따옴표 중요!!
+    const author_input = document.getElementById("author");
+    const category_input = document.getElementById("category");
+    newid = 4
+    add.addEventListener("click", function () {
+        const added_date = {//!!
+            id: newid,
+            title: title_input.value,
+            author: author_input.value,
+            category: category_input.value
+        };
+
+        if (editid === null) {
+
+            books.push(added_date);
+            render();
+            newid++;
+        }
+
+        else {
+
+            const location = books.findIndex(b => b.id === editid)//!!
+            added_date.id = editid
+            books[location] = added_date
+            add.innerText = "add";
+            render();
+        };
+
+
+    })
+    //3.수정 기능
+    function eBook(num) {
+        const book = books.find(b => b.id === num);
+        title_input.value = book.title
+        author_input.value = book.author
+        category_input.value = book.category
+        add.innerText = "수정"
+        newid = id
+        editid = id;
+
+    }
+    //4 삭제
+    function dBook(id) {
+        books = books.filter(b => b.id !== id);
+        //없앤 다음의 아이디 -1해야함
+        let crnet_id = 1;
+        books.forEach(b => {
+            b.id = crnet_id;
+            crnet_id++;
+        });
+        newid = books.length + 1;
+        render();
+
+
+    }
+
+
+
+
+
+</script>
+
+</html>

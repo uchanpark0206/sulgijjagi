@@ -111,17 +111,65 @@
         </div>
     </div>
 
+    <!-- Supabase JS CDN 불러오기 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // Supabase 클라이언트 초기화
+        const SUPABASE_URL = "https://mklzsynmolckpxqzdvue.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_MfYXMMdFXBd-nufUhkAqNw_bnRS9aPq";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         // 오늘 날짜를 기본값으로 세팅
-        document.getElementById('targetDate').valueAsDate = new Date();
+        const targetDateInput = document.getElementById('targetDate');
+        targetDateInput.valueAsDate = new Date();
 
         let busySchedules = [];
 
-        // 1. 일정 추가 함수
-        function addSchedule() {
-            const targetDate = document.getElementById('targetDate').value;
-            const name = document.getElementById('memberName').value;
-            const eventName = document.getElementById('eventName').value;
+        // 날짜 변경 시 해당 날짜의 일정을 다시 불러오기
+        targetDateInput.addEventListener('change', () => {
+            loadSchedules();
+        });
+
+        // 0. Supabase에서 일정 목록 최신순으로 불러오기
+        async function loadSchedules() {
+            const targetDate = targetDateInput.value;
+            if (!targetDate) return;
+
+            const { data, error } = await supabaseClient
+                .from('schedules')
+                .select('*')
+                .eq('target_date', targetDate)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("일정 불러오기 실패:", error);
+                alert("데이터를 불러오는 중 오류가 발생했습니다: " + error.message);
+                return;
+            }
+
+            // DB에서 가져온 데이터를 화면 및 계산용 형식으로 변환
+            busySchedules = (data || []).map(row => {
+                // time 타입이 "HH:MM:SS" 형태일 수 있으므로 앞 5자리("HH:MM")만 사용
+                const startStr = row.start_time.slice(0, 5);
+                const endStr = row.end_time.slice(0, 5);
+                return {
+                    id: row.id,
+                    name: row.member_name,
+                    event: row.event_name,
+                    start: new Date(`${row.target_date}T${startStr}`),
+                    end: new Date(`${row.target_date}T${endStr}`)
+                };
+            });
+
+            updateDOM();
+            calculateFreeTime(targetDate);
+        }
+
+        // 1. 일정 추가 함수 (Supabase에 저장)
+        async function addSchedule() {
+            const targetDate = targetDateInput.value;
+            const name = document.getElementById('memberName').value.trim();
+            const eventName = document.getElementById('eventName').value.trim();
             const start = document.getElementById('startTime').value;
             const end = document.getElementById('endTime').value;
 
@@ -135,29 +183,42 @@
                 return;
             }
 
-            // 날짜와 시간을 합쳐서 Date 객체로 변환
-            const startDateTime = new Date(`${targetDate}T${start}`);
-            const endDateTime = new Date(`${targetDate}T${end}`);
+            // Supabase schedules 테이블에 데이터 저장
+            const { error } = await supabaseClient
+                .from('schedules')
+                .insert([
+                    {
+                        target_date: targetDate,
+                        member_name: name,
+                        event_name: eventName,
+                        start_time: start,
+                        end_time: end
+                    }
+                ]);
 
-            busySchedules.push({
-                name: name,
-                event: eventName,
-                start: startDateTime,
-                end: endDateTime
-            });
+            if (error) {
+                console.error("일정 저장 실패:", error);
+                alert("일정 저장 중 오류가 발생했습니다: " + error.message);
+                return;
+            }
 
             // 입력창 초기화 (이름과 일정명만)
             document.getElementById('memberName').value = '';
             document.getElementById('eventName').value = '';
 
-            updateDOM();
-            calculateFreeTime(targetDate);
+            // 저장 후 최신 목록 다시 불러오기
+            await loadSchedules();
         }
 
-        // 2. 화면에 등록된 일정 리스트 보여주기
+        // 2. 화면에 등록된 일정 리스트 보여주기 (최신순)
         function updateDOM() {
             const list = document.getElementById('scheduleList');
             list.innerHTML = "";
+
+            if (busySchedules.length === 0) {
+                list.innerHTML = "<li>등록된 일정이 없습니다.</li>";
+                return;
+            }
 
             busySchedules.forEach(s => {
                 const li = document.createElement('li');
@@ -168,11 +229,16 @@
 
         // 3. 빈 시간(여집합) 계산 로직
         function calculateFreeTime(targetDateString) {
+            const resultList = document.getElementById('resultList');
+
             // 기준 시간: 해당 날짜의 09:00 ~ 22:00
             const boundaryStart = new Date(`${targetDateString}T09:00:00`);
             const boundaryEnd = new Date(`${targetDateString}T22:00:00`);
 
-            if (busySchedules.length === 0) return;
+            if (busySchedules.length === 0) {
+                resultList.innerHTML = "<li>✅ <b>09:00 ~ 22:00</b> (등록된 일정 없음)</li>";
+                return;
+            }
 
             // [핵심 1] 입력된 모든 일정을 시작 시간 순서대로 정렬
             let sortedSchedules = [...busySchedules].sort((a, b) => a.start - b.start);
@@ -211,7 +277,6 @@
             }
 
             // [결과 출력]
-            const resultList = document.getElementById('resultList');
             resultList.innerHTML = "";
 
             if (freeTimes.length === 0) {
@@ -229,6 +294,9 @@
         function formatTime(date) {
             return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
+
+        // 페이지 첫 로드 시 Supabase에서 일정 불러오기
+        loadSchedules();
     </script>
 </body>
 

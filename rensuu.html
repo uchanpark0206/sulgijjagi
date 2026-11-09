@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>실습시험 - 상품 관리 CRUD</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        form {
+            background-color: rgb(231, 228, 225);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+
+
+        label {
+            width: 80px;
+
+        }
+
+
+
+        input,
+        select {
+
+            width: 200px;
+        }
+
+        button {
+            margin-top: 10px;
+
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid;
+            text-align: center;
+        }
+
+        th {
+            background-color: #842525;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Product Management</h2>
+
+    <!-- 입력 영역 -->
+    <form id="productForm">
+        <div class="form-group">
+            <label for="pName">상품명</label>
+            <input type="text" id="pName" placeholder="상품명 입력">
+        </div>
+        <div class="form-group">
+            <label for="pCategory">카테고리</label>
+            <select id="pCategory">
+                <option value="">-- 선택 --</option>
+                <option value="전자기기">전자기기</option>
+                <option value="도서">도서</option>
+                <option value="식품">식품</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="pPrice">가격</label>
+            <input type="number" id="pPrice" placeholder="100원 이상">
+        </div>
+        <button id="submitBtn">Add</button>
+    </form>
+
+    <!-- 출력 영역 -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>상품명</th>
+                <th>카테고리</th>
+                <th>가격</th>
+                <th>관리</th>
+            </tr>
+        </thead>
+        <tbody id="productList">
+            <!-- 여기에 데이터가 렌더링됩니다 -->
+        </tbody>
+    </table>
+
+    <script>
+        // 초기 데이터
+        let products = [
+            { id: 1, name: "무선 마우스", category: "전자기기", price: 25000 },
+            { id: 2, name: "JavaScript 입문", category: "도서", price: 18000 },
+            { id: 3, name: "아몬드 초콜릿", category: "식품", price: 3500 }
+        ];
+
+        let nextId = 4;       // 새로 추가될 데이터의 ID
+        let editId = null;    // 현재 수정 중인 데이터의 ID (null이면 추가 모드)
+
+        // DOM 요소 참조
+        const nameInput = document.getElementById("pName");
+        const categoryInput = document.getElementById("pCategory");
+        const priceInput = document.getElementById("pPrice");
+        const submitBtn = document.getElementById("submitBtn");
+        const productList = document.getElementById("productList");
+
+        window.onload = function () {
+            render();
+            submitBtn.addEventListener("click", handleSave);
+        };
+
+        // [문제 1] 화면 출력 함수 (Read)
+        function render() {
+            // tr을 만들어서 기존에 있던 데이터들을 하나하나 넣는다, 그리는 과정임!! 기존 데이터에 데이터 넣는거 아님!!! 보이기만 하는거임!!
+            productList.innerHTML = "";
+            products.forEach(b => {
+                const tr = document.createElement("tr");//createElement이름 헷갈림, 반복문 안에 있어야함
+                tr.innerHTML = `
+        <td>${b.id}</td>
+        <td>${b.name}</td>
+        <td>${b.category}</td>
+        <td>${b.price}</td>
+        <td>
+            <button onclick="startEdit(${b.id})" >수정</button>
+            <button onclick="deleteProduct(${b.id})" >삭제</button>
+        </td>
+        `
+                productList.appendChild(tr);//반목문 안에 있어야함
+            })
+            //
+
+
+        }
+        render();
+
+
+
+
+
+        // [문제 2] 유효성 검사 함수 (Validation)
+        function validateForm() {
+            // TODO 2: 요구사항의 3가지 Validation 조건을 구현하시오. (통과 시 true 반환)
+            if (nameInput.value.trim() === "") {
+                alert("값을 넣어");
+                nameInput.focus();
+                return false;
+
+
+            }
+            else if (categoryInput.value.trim() === "") {
+                alert("값을 넣어");
+                categoryInput.focus();
+                return false;
+
+            }
+            else if (priceInput.value.trim() === "") {
+                alert("값을 넣어");
+                priceInput.focus();
+                return false;
+
+
+            }
+            else if ((Number(priceInput.value) < 100)) {
+                alert("값을 넣어");
+                priceInput.focus();
+                return false;
+
+
+            }
+            return true;
+        }
+
+        /* submitBtn.addEventListener("click", function () {
+             //새로운 대이터를 만들고 새로 만들어진 그 대이터에 표의 데이터를 저장하고 기존데이터에 통째로 넣음!!
+             if (!validateInput()) return;
+             let new_date = {
+                 name: nameInput.value,
+                 category: categoryInput.value,
+                 price: priceInput.value
+             }
+             if (editId === null) {
+                 new_date.id = nextId;
+                 products.push(new_date)
+                 render();
+                 nextId++;
+             }
+             else {
+                 new_date.id = editId;
+                 products[editId-1] =new_date;
+                 render();
+                 submitBtn.innerText = "add";
+                 editId = null;
+ 
+ 
+             }
+         
+         })*/
+
+        // [문제 3] 데이터 추가 및 수정 저장 함수 (Create & Update)
+        function handleSave() {
+            if (!validateForm()) return;
+            if (!validateInput()) return;
+            let new_date = {
+                name: nameInput.value,
+                category: categoryInput.value,
+                price: priceInput.value
+            }
+            if (editId === null) {
+                new_date.id = nextId;
+                products.push(new_date)
+                render();
+                nextId++;
+            }
+            else {
+                new_date.id = editId;
+                products[editId - 1] = new_date;
+                render();
+                submitBtn.innerText = "add";
+                editId = null;
+
+
+            }
+
+
+            // TODO 3: editId가 null이면 배열에 새 객체 추가(Create), 아니면 기존 객체 찾아서 값 수정(Update)
+            // 처리 후 입력창 초기화, editId = null, 버튼 텍스트 "Add"로 복구, render() 호출
+
+        }
+
+        // [문제 4] 수정 모드 진입 함수 (Update 준비)
+        function startEdit(id) {
+            // TODO 4: 배열에서 id가 일치하는 데이터를 찾아 input에 값을 채우고, editId 설정 및 버튼 텍스트를 "저장"으로 변경하시오.
+            //해당 아이디에 있는 값들이 표에 들어가게하기
+            //>>해당아이디의 정보들을 담을 수 있는 새로운 변수 선언
+            edit_data = products.find(b => b.id == id);//{} 이런 식으로 결과가 나옴!!
+
+            //해당 아이디에 해당하는 정보들이 edit_data라는 변수에 
+            nameInput.value = edit_data.name
+            categoryInput.value = edit_data.category
+            priceInput.value = edit_data.price
+            submitBtn.innerText = "수정";
+            editId = id;
+        }
+
+        // [문제 5] 데이터 삭제 함수 (Delete)
+        function deleteProduct(id) {
+            // TODO 5: confirm() 확인 후 배열에서 해당 id 데이터를 삭제하고 render()를 호출하시오.
+            products = products.filter(b => b.id != id);//filter의 사용법 {}넣으면 안됨
+            //filter은 배열 형식으로 리턴됨
+            render();
+
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <h1>연습</h1>
+    111 1111
+    <form>
+        <label>이름</label>
+        <input type="text" id="name"><br>
+        <label>학번</label>
+        <input type="number" id="s_id"><br>
+        <button type=button id="add">추가</button>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>이름</th>
+                <th>학번</th>
+                <th>관리</th>
+
+            </tr>
+
+        </thead>
+        <tbody id="table">
+
+        </tbody>
+    </table>
+
+</body>
+<script>
+    let ex = [
+        { id: 1, name: "a", s_id: 10 },
+        { id: 2, name: "b", s_id: 20 },
+        { id: 3, name: "c", s_id: 30 }
+    ]
+    let check = null;
+    function render() {//내용들을 볼수 있게하는거
+        //따옴표를 자주 까먹음
+        //tr을 만들어서 ex값을 table에 넣기
+        table.innerHTML = "";
+        ex.forEach(b => {
+            const tr = document.createElement("tr");//
+            tr.innerHTML = `
+            <td>${b.id}</td>
+            <td>${b.name}</td>
+            <td>${b.s_id}</td>
+            <td>
+                <button onclick="e(${b.id})">수정</button>
+                <button onclick="d(${b.id})">삭제</button>
+            </td>
+            `;//onclick="함수명(${b.id})"
+            table.appendChild(tr);//
+        }
+        )
+        check = null; //수정의 의 결로로 들어온 값인지 아님 저장하려는 값이니 확인하기 위한
+    }
+
+
+
+
+    const namein = document.getElementById("name");//따옴표!!
+    const Sidin = document.getElementById("s_id");
+    let line = 4;
+
+
+    add.addEventListener("click", function () {//폼의 추가 버튼을 누르면 form에 있는 단어들이 배열에 들어간다.
+        //폼에 있는 값들을 배열에 넣기
+        //새로운 대이터를 집어넣게 위해 새로운 데이터 뭉치를 만들어서 그걸 다시 기존 대이터에 저장하기
+        const new_data = {//폼에 있는 데이터를 넣어준 배열
+            name: namein.value,
+            s_id: Sidin.value
+        }
+        if (check === null) {
+            new_data.id = line;
+            ex.push(new_data);
+            render();
+            line++;
+        }
+        else {
+            const location = ex.findIndex(b => b.id === check)
+            new_data.id = check;
+            //ex[location].id = check;
+            ex[location] = new_data;
+            render();
+            check = null;
+            add.innerText = "저장"
+
+        }
+    })
+    /* add.addEventListener("click",function(){//폼의 추가 버튼을 누르면 form에 있는 단어들이 배열에 들어간다.
+        //폼에 있는 값들을 배열에 넣기
+        //새로운 대이터를 집어넣게 위해 새로운 데이터 뭉치를 만들어서 그걸 다시 기존 대이터에 저장하기
+        const new_data={//폼에 있는 데이터를 넣어준 배열
+            name:namein.value,
+            s_id:Sidin.value
+        }
+        new_data.id = line;
+        ex.push(new_data);
+        render();
+        line++;
+    })*/
+
+
+
+
+
+    //수정
+    //버튼에 onclick="힘수명()"
+    function e(n) {
+        add.innerText = "수정"
+        //해당 아이디에 있는값 = >폼으로
+        //n이 해당한 부분을 찾기
+        const target = ex.find(b => b.id == n);
+        namein.value = target.name;
+        Sidin.value = target.s_id;
+        //그리고 폼으로 올린 내용들을 다시 그 장소에 넣는다
+        check = n;
+    }
+    render();
+    //삭제
+    function d(n) {
+        ex = ex.filter(b => b.id != n);
+        render();
+
+
+
+    }
+</script>
+
+
+</html>
